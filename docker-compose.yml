@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:15.3
+    container_name: django_g4_db
+    environment:
+      POSTGRES_USER: "user"
+      POSTGRES_PASSWORD: "pass123"
+      POSTGRES_DB: "postgres"
+      POSTGRES_LOGGING: 'detailed'
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+
+
+  gunicorn:
+    build: .
+    container_name: django_g4
+    #command: sh -c "python manage.py migrate && python manage.py createsuperuser --noinput && gunicorn django_app.wsgi:application --bind 0.0.0.0:8001"
+    command: sh /usr/src/app/starter.sh
+    environment:
+      - DJANGO_SUPERUSER_USERNAME=test
+      - DJANGO_SUPERUSER_PASSWORD=test
+      - DJANGO_SUPERUSER_EMAIL=contacts@lun.is
+    volumes:
+      - ./:/usr/src/app/
+      - static_volume:/usr/src/app/static/
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+
+  nginx:
+    build: ./nginx
+    container_name: nginx_g4
+    ports:
+      - "8002:8002"
+    depends_on:
+      - gunicorn
+    volumes:
+      - static_volume:/usr/src/app/static/
+
+volumes:
+  static_volume:
